@@ -278,5 +278,29 @@
     "message_source": {
         "message": "原始碼",
         "description": "Source code"
+    },
+    "strength_weak": {
+        "message": "過弱",
+        "description": "Password strength level: Weak"
+    },
+    "strength_fair": {
+        "message": "普通",
+        "description": "Password strength level: Fair"
+    },
+    "strength_good": {
+        "message": "尚可",
+        "description": "Password strength level: Good"
+    },
+    "strength_strong": {
+        "message": "強固",
+        "description": "Password strength level: Strong"
+    },
+    "strength_excellent": {
+        "message": "極強",
+        "description": "Password strength level: Excellent"
+    },
+    "strength_entropy": {
+        "message": "熵值",
+        "description": "Label for entropy value display"
     }
 }

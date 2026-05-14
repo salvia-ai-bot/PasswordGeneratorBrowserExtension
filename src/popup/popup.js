@@ -124,45 +124,124 @@ class PopupManager {
     updateStrengthMeter(password, checksum) {
         const meter = document.getElementById('strengthMeter');
         const label = document.getElementById('strengthLabel');
+        const entropyText = document.getElementById('entropyText');
         if (!meter || !label) return;
 
-        let strength = 0;
+        // Calculate charset size directly from UI state (accurate!)
+        const charsetSize = this.getCharsetSize();
         const length = password.length;
-        const charsetSize = new Set(password).size > 0 ? this.estimateCharsetSize(password) : 1;
         const entropy = length * Math.log2(charsetSize);
 
-        if (entropy >= 20) strength = 25;
-        if (entropy >= 36) strength = 50;
-        if (entropy >= 60) strength = 75;
-        if (entropy >= 80) strength = 100;
+        // Strength percentage based on entropy thresholds
+        let strength = 0;
+        if (entropy >= 15) strength = 15;
+        if (entropy >= 28) strength = 30;
+        if (entropy >= 40) strength = 50;
+        if (entropy >= 60) strength = 70;
+        if (entropy >= 80) strength = 85;
+        if (entropy >= 100) strength = 100;
 
-        meter.style.width = strength + '%';
-        if (strength <= 25) {
-            meter.style.backgroundColor = '#ef4444';
-            label.style.color = '#ef4444';
-            label.textContent = checksum === 'RANDOM' ? 'Weak' : 'Weak';
-        } else if (strength <= 50) {
-            meter.style.backgroundColor = '#f59e0b';
-            label.style.color = '#f59e0b';
-            label.textContent = checksum === 'RANDOM' ? 'Fair' : 'Fair';
-        } else if (strength <= 75) {
-            meter.style.backgroundColor = '#3b82f6';
-            label.style.color = '#3b82f6';
-            label.textContent = checksum === 'RANDOM' ? 'Good' : 'Good';
+        // Determine strength level and color
+        let level, color;
+        if (strength < 30) {
+            level = 'weak';
+            color = '#ef4444';
+        } else if (strength < 50) {
+            level = 'fair';
+            color = '#f59e0b';
+        } else if (strength < 70) {
+            level = 'good';
+            color = '#3b82f6';
+        } else if (strength < 85) {
+            level = 'strong';
+            color = '#10b981';
         } else {
-            meter.style.backgroundColor = '#10b981';
-            label.style.color = '#10b981';
-            label.textContent = checksum === 'RANDOM' ? 'Strong' : 'Strong';
+            level = 'excellent';
+            color = '#059669';
+        }
+
+        // Translate level text
+        const levelText = {
+            'weak': this.i18n('strength_weak'),
+            'fair': this.i18n('strength_fair'),
+            'good': this.i18n('strength_good'),
+            'strong': this.i18n('strength_strong'),
+            'excellent': this.i18n('strength_excellent'),
+        };
+
+        // Update meter bar
+        meter.style.width = strength + '%';
+        meter.style.backgroundColor = color;
+
+        // Update label with level + crack time estimate
+        const crackTime = this.estimateCrackTime(entropy);
+        label.style.color = color;
+        label.textContent = `${levelText[level]} · ${crackTime}`;
+
+        // Update entropy text
+        if (entropyText) {
+            entropyText.textContent = `${entropy.toFixed(1)} bits`;
         }
     }
 
-    estimateCharsetSize(password) {
+    /**
+     * Calculate charset size directly from UI state.
+     * This is the CORRECT way — we know exactly which character sets are enabled.
+     */
+    getCharsetSize() {
         let size = 0;
-        if (/[0-9]/.test(password)) size += 10;
-        if (/[a-z]/.test(password)) size += 26;
-        if (/[A-Z]/.test(password)) size += 26;
-        if (/[^0-9a-zA-Z]/.test(password)) size += 32;
+        if (this.elements.numbersCheckbox.checked) size += 10;
+        if (this.elements.uppercaseCheckbox.checked) size += 26;
+        if (this.elements.lowercaseCheckbox.checked) size += 26;
+        if (this.elements.symbolsCheckbox.checked) {
+            size += this.elements.symbolsCharField.value.length;
+        }
         return size > 0 ? size : 1;
+    }
+
+    /**
+     * Estimate brute-force crack time based on entropy.
+     * Assumes 20 billion guesses/second (modern GPU).
+     */
+    estimateCrackTime(entropy) {
+        const guessesPerSecond = 20e9; // 20 billion/sec (modern GPU)
+        const totalGuesses = Math.pow(2, entropy);
+        const seconds = totalGuesses / guessesPerSecond / 2; // divide by 2 for average
+
+        if (seconds < 0.001) return `< 1ms`;
+        if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
+        if (seconds < 60) return `${seconds.toFixed(1)}s`;
+        if (seconds < 3600) return `${Math.round(seconds / 60)}min`;
+        if (seconds < 86400) return `${Math.round(seconds / 3600)}h`;
+        if (seconds < 86400 * 365) return `${Math.round(seconds / 86400)}d`;
+        if (seconds < 86400 * 365 * 1000) return `${(seconds / 86400 / 365).toFixed(0)}y`;
+        return `${this.i18n('strength_instant')}`;
+    }
+
+    /**
+     * Simple i18n helper for strength meter labels.
+     * Falls back to English if translation not found.
+     */
+    i18n(key) {
+        try {
+            const msg = chrome.i18n.getMessage(key);
+            return msg !== key ? msg : this.i18nFallback(key);
+        } catch {
+            return this.i18nFallback(key);
+        }
+    }
+
+    i18nFallback(key) {
+        const fallbacks = {
+            'strength_weak': 'Weak',
+            'strength_fair': 'Fair',
+            'strength_good': 'Good',
+            'strength_strong': 'Strong',
+            'strength_excellent': 'Excellent',
+            'strength_instant': '< 1ms',
+            'strength_entropy': 'Entropy',
+        };
+        return fallbacks[key] || key;
     }
 
     getKeywordFromUrl(domain){
