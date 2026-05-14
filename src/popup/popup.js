@@ -225,7 +225,7 @@ class PopupManager {
     i18n(key) {
         try {
             const msg = chrome.i18n.getMessage(key);
-            return msg !== key ? msg : this.i18nFallback(key);
+            return msg ? msg : this.i18nFallback(key);
         } catch {
             return this.i18nFallback(key);
         }
