@@ -116,12 +116,12 @@ class PopupManager {
                 this.elements.checksumField.textContent = '['+message.data.checksum+']';
                 if (message.data.need_copy) this.copyPw();
                 // Update password strength meter
-                this.updateStrengthMeter(message.data.password, message.data.checksum);
+                this.updateStrengthMeter(message.data.password);
             }
         });
     }
 
-    updateStrengthMeter(password, checksum) {
+    updateStrengthMeter(password) {
         const meter = document.getElementById('strengthMeter');
         const label = document.getElementById('strengthLabel');
         const entropyText = document.getElementById('entropyText');
@@ -194,7 +194,7 @@ class PopupManager {
         if (this.elements.uppercaseCheckbox.checked) size += 26;
         if (this.elements.lowercaseCheckbox.checked) size += 26;
         if (this.elements.symbolsCheckbox.checked) {
-            size += this.elements.symbolsCharField.value.length;
+            size += new Set(this.elements.symbolsCharField.value).size;
         }
         return size > 0 ? size : 1;
     }
