@@ -215,7 +215,7 @@ class PopupManager {
         if (seconds < 86400) return `${Math.round(seconds / 3600)}h`;
         if (seconds < 86400 * 365) return `${Math.round(seconds / 86400)}d`;
         if (seconds < 86400 * 365 * 1000) return `${(seconds / 86400 / 365).toFixed(0)}y`;
-        return `${this.i18n('strength_instant')}`;
+        return `> 1,000y`;
     }
 
     /**
