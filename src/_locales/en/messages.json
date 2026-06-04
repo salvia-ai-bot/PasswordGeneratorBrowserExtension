@@ -302,5 +302,9 @@
     "strength_entropy": {
         "message": "Entropy",
         "description": "Label for entropy value display"
+    },
+    "strength_bits": {
+        "message": "bits",
+        "description": "Unit for entropy bits"
     }
 }

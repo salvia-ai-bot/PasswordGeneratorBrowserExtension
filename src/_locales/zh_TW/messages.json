@@ -302,5 +302,9 @@
     "strength_entropy": {
         "message": "熵值",
         "description": "Label for entropy value display"
+    },
+    "strength_bits": {
+        "message": "位",
+        "description": "Unit for entropy bits"
     }
 }

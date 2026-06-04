@@ -178,9 +178,9 @@ class PopupManager {
         label.style.color = color;
         label.textContent = `${levelText[level]} · ${crackTime}`;
 
-        // Update entropy text
+        // Update entropy text (i18n label + value)
         if (entropyText) {
-            entropyText.textContent = `${entropy.toFixed(1)} bits`;
+            entropyText.textContent = `${this.i18n('strength_entropy')}: ${entropy.toFixed(1)} ${this.i18n('strength_bits')}`;
         }
     }
 
@@ -193,8 +193,10 @@ class PopupManager {
         if (this.elements.numbersCheckbox.checked) size += 10;
         if (this.elements.uppercaseCheckbox.checked) size += 26;
         if (this.elements.lowercaseCheckbox.checked) size += 26;
-        if (this.elements.symbolsCheckbox.checked) {
-            size += new Set(this.elements.symbolsCharField.value).size;
+        if (this.elements.symbolsCheckbox?.checked) {
+            const symbols = this.elements.symbolsCharField?.value || '';
+            // Fall back to default 32 symbols if user clears the field but keeps symbols enabled
+            size += symbols.length > 0 ? new Set(symbols).size : 32;
         }
         return size > 0 ? size : 1;
     }
@@ -202,19 +204,20 @@ class PopupManager {
     /**
      * Estimate brute-force crack time based on entropy.
      * Assumes 20 billion guesses/second (modern GPU).
+     * Uses logarithm math to avoid overflow on extreme entropy values.
      */
     estimateCrackTime(entropy) {
         const guessesPerSecond = 20e9; // 20 billion/sec (modern GPU)
-        const totalGuesses = Math.pow(2, entropy);
-        const seconds = totalGuesses / guessesPerSecond / 2; // divide by 2 for average
+        // log2(avg seconds) = entropy - log2(guessesPerSecond) - 1 (divide by 2 for average)
+        const log2Seconds = entropy - Math.log2(guessesPerSecond) - 1;
 
-        if (seconds < 0.001) return `< 1ms`;
-        if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
-        if (seconds < 60) return `${seconds.toFixed(1)}s`;
-        if (seconds < 3600) return `${Math.round(seconds / 60)}min`;
-        if (seconds < 86400) return `${Math.round(seconds / 3600)}h`;
-        if (seconds < 86400 * 365) return `${Math.round(seconds / 86400)}d`;
-        if (seconds < 86400 * 365 * 1000) return `${(seconds / 86400 / 365).toFixed(0)}y`;
+        if (log2Seconds < Math.log2(0.001)) return `< 1ms`;
+        if (log2Seconds < Math.log2(1)) return `${Math.round(2 ** log2Seconds * 1000)}ms`;
+        if (log2Seconds < Math.log2(60)) return `${(2 ** log2Seconds).toFixed(1)}s`;
+        if (log2Seconds < Math.log2(3600)) return `${Math.round(2 ** log2Seconds / 60)}min`;
+        if (log2Seconds < Math.log2(86400)) return `${Math.round(2 ** log2Seconds / 3600)}h`;
+        if (log2Seconds < Math.log2(86400 * 365)) return `${Math.round(2 ** log2Seconds / 86400)}d`;
+        if (log2Seconds < Math.log2(86400 * 365 * 1000)) return `${(2 ** log2Seconds / 86400 / 365).toFixed(0)}y`;
         return `> 1,000y`;
     }
 
@@ -238,8 +241,8 @@ class PopupManager {
             'strength_good': 'Good',
             'strength_strong': 'Strong',
             'strength_excellent': 'Excellent',
-            'strength_instant': '< 1ms',
             'strength_entropy': 'Entropy',
+            'strength_bits': 'bits',
         };
         return fallbacks[key] || key;
     }
